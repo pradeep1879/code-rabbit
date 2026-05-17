@@ -1,10 +1,15 @@
 import { Button } from "@/components/ui/button";
+import LogOut from "@/module/components/logout";
+import { requireAuth } from "@/module/utils/auth-utils";
 import Image from "next/image";
 
-export default function Home() {
+export default async function Home() {
+  await requireAuth();
   return (
     <div className="underline">
-      <Button>Hello Wrold!</Button>
+      <LogOut>
+      <Button>Logout</Button>
+      </LogOut>
     </div>
   );
 }
