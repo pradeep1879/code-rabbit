@@ -49,18 +49,21 @@ const AppSidebar = () => {
     setMounted(true);
   }, []);
 
-  if (!mounted || !session) return null;
 
-  const user = session.user;
 
-  const userName = user.name || "Guest";
-  const userEmail = user.email || "";
+  const user = session?.user;
 
-  const userInitials = userName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+  const userName = user?.name || "Loading...";
+  const userEmail = user?.email || "";
+
+  const userInitials =
+    userName !== "Loading..."
+      ? userName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+      : "U";
 
   const navigationItems = [
     {
@@ -200,12 +203,18 @@ const AppSidebar = () => {
               variant="ghost"
               size="icon"
               className="rounded-xl"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() =>
+                setTheme(theme === "dark" ? "light" : "dark")
+              }
             >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
+              {mounted ? (
+                theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )
               ) : (
-                <Moon className="h-4 w-4" />
+                <div className="h-4 w-4" />
               )}
             </Button>
           </div>
