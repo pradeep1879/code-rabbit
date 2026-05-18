@@ -1,75 +1,97 @@
 import { Octokit } from "octokit";
-import { auth } from '@/lib/auth'
+
 import { headers } from "next/headers";
+
 import prisma from "@/lib/db";
-import { DateFnsMonth } from "react-day-picker";
+import { auth } from "@/lib/auth";
 
+export const getGithubToken = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-export const getGithubToken = async() =>{
-  const session = await auth.api.getSession({headers: await headers()})
-
-  if(!session){
-    throw new Error("Unauthorized")
+  if (!session?.user) {
+    throw new Error("Unauthorized");
   }
 
   const account = await prisma.account.findFirst({
     where: {
       userId: session.user.id,
-      providerId: "github"
-    }
+      providerId: "github",
+    },
   });
-  if(!account?.accessToken){
-    throw new Error("No github access token found")
+
+  if (!account?.accessToken) {
+    throw new Error(
+      "No GitHub access token found"
+    );
   }
 
-  return account.accessToken
+  return account.accessToken;
+};
+
+interface ContributionCalendar {
+  totalContributions: number;
+
+  weeks: {
+    contributionDays: {
+      contributionCount: number;
+      date: string;
+      color: string;
+    }[];
+  }[];
 }
 
-export const fetchUserContribution = async (token:string, username: string) => {
-  const octokit = new Octokit({auth: token});
+interface ContributionResponse {
+  user: {
+    contributionsCollection: {
+      contributionCalendar: ContributionCalendar;
+    };
+  };
+}
+
+export const fetchUserContribution = async (
+  token: string,
+  username: string
+): Promise<ContributionCalendar | null> => {
+  const octokit = new Octokit({
+    auth: token,
+  });
 
   const query = `
-  query($username:String!){
-    user(login:$username){
-      contributionCollection{
-        contributionCalendar{
-          totalContributions
-            weeks{
-              contributionDays{
+    query($username: String!) {
+      user(login: $username) {
+        contributionsCollection {
+          contributionCalendar {
+            totalContributions
+            weeks {
+              contributionDays {
                 contributionCount
-                data
+                date
                 color
               }
             }
+          }
         }
       }
     }
-  }
-  `
-
-  // interface ContributionData{
-  //   user: {
-  //     contributionCollection: {
-  //       contributionCalendar: {
-  //         totalcontribution: number,
-  //           weeks: {
-  //             contributionCount: number,
-  //             data: string | Date,
-  //             color: string
-  //           }
-  //       }
-  //     }
-  //   }
-  // }
-
+  `;
   try {
-    const response: any = await octokit.graphql(query, {
-      username
-    })
+    const response =
+      await octokit.graphql<ContributionResponse>(
+        query,
+        {
+          username,
+        }
+      );
 
-    return response.user.contributionCollection.contributionCalendar
-
+    return response.user.contributionsCollection.contributionCalendar;
   } catch (error) {
-    
+    console.error(
+      "GitHub Contribution Fetch Error:",
+      error
+    );
+
+    return null;
   }
-}
+};
