@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useRepositories } from "@/module/repository/hooks/use-repositories";
+import { useConnectRepository } from "@/module/repository/hooks/use-connect-repository";
 
 interface Repository {
   id: number | string;
@@ -41,7 +42,7 @@ const RepositorySkeleton = () => {
           <div className="space-y-3 flex-1">
             <div className="space-y-2">
               <Skeleton className="h-5 w-52" />
-              <Skeleton className="h-4 w-full max-w-[500px]" />
+              <Skeleton className="h-4 w-full max-w-125" />
               <Skeleton className="h-4 w-[80%]" />
             </div>
 
@@ -76,9 +77,9 @@ const RepositoryPage = () => {
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  const [localConnectingId, setLocalConnectingId] = useState<
-    number | string | null
-  >(null);
+  const {mutate: connectRepo} = useConnectRepository()
+
+  const [localConnectingId, setLocalConnectingId] = useState<number | string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -138,7 +139,14 @@ const RepositoryPage = () => {
     try {
       setLocalConnectingId(repo.id);
 
-      console.log("Connect repository:", repo);
+      connectRepo({
+        owner:repo.full_name.split("/")[0],
+        repo: repo.name,
+        githubId: repo.id,},
+        {
+          onSettled: () => setLocalConnectingId(null)
+        }
+      )
 
       // TODO:
       // connect repository action
