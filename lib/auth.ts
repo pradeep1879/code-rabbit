@@ -2,8 +2,17 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "./db";
 import { polarClient } from "@/module/payment/config/polar";
-import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth"
-import { updatePolarCustomerId, updateUserTier } from "@/module/payment/lib/subscription";
+import {
+  polar,
+  checkout,
+  portal,
+  usage,
+  webhooks,
+} from "@polar-sh/better-auth";
+import {
+  syncPolarCustomerForEmail,
+  syncSubscriptionStateFromPolarSubscription,
+} from "@/module/payment/lib/polar-subscription";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -16,6 +25,7 @@ export const auth = betterAuth({
       scope:["repo"]
     },
   }),
+  trustedOrigins: ["http://localhost:3000", "https://astrology-palace-proofread.ngrok-free.dev"],
   plugins: [
     polar({
         client: polarClient,
@@ -25,10 +35,10 @@ export const auth = betterAuth({
                 products: [
                   {
                     productId: "62ef4929-f9d7-4bdb-91f3-aa51f74fa49c",
-                    slug: "New CodeRabbit" // Custom slug for easy reference in Checkout URL, e.g. /checkout/CodeRabbit
+                    slug: "pro" // Custom slug for easy reference in Checkout URL, e.g. /checkout/CodeRabbit
                   }
                 ],
-                successUrl: process.env.POLAR_SUCCESS_URL,
+                successUrl: process.env.POLAR_SUCCESS_URL || "/dashboard/subscription?success=true",
                 authenticatedUsersOnly: true
             }),
             portal({
@@ -38,57 +48,47 @@ export const auth = betterAuth({
             webhooks({
               secret: process.env.POLAR_WEBHOOK_SECRET!,
               onSubscriptionActive: async (payload) => {
-                const customerId = payload.data.customerId
-
-                const user = await prisma.user.findFirst({
-                  where:{
-                    polarCustomerId: customerId
-                  }
-                });
-
-                if(user){
-                  await updateUserTier(user.id, "PRO", "ACTIVE", payload.data.id)
-                }
+                await syncSubscriptionStateFromPolarSubscription(
+                  payload.data
+                );
               },
-              onSubscriptionCanceled:async (payload) => {
-                const customerId = payload.data.customerId
-
-                const user = await prisma.user.findFirst({
-                  where:{
-                    polarCustomerId: customerId
-                  }
-                });
-
-                if(user){
-                  await updateUserTier(user.id, user.subscriptionTier as any , "CANCELED")
-                }
-
+              onSubscriptionCreated: async (payload) => {
+                await syncSubscriptionStateFromPolarSubscription(
+                  payload.data
+                );
+              },
+              onSubscriptionUpdated: async (payload) => {
+                await syncSubscriptionStateFromPolarSubscription(
+                  payload.data
+                );
+              },
+              onSubscriptionCanceled: async (payload) => {
+                await syncSubscriptionStateFromPolarSubscription(
+                  payload.data
+                );
               },
               onSubscriptionRevoked: async (payload) => {
-                const customerId = payload.data.customerId
-
-                const user = await prisma.user.findFirst({
-                  where:{
-                    polarCustomerId: customerId
-                  }
-                });
-
-                if(user){
-                  await updateUserTier(user.id, "FREE", "EXPIRED")
-                }
-
+                await syncSubscriptionStateFromPolarSubscription(
+                  payload.data
+                );
+              },
+              onSubscriptionUncanceled: async (payload) => {
+                await syncSubscriptionStateFromPolarSubscription(
+                  payload.data
+                );
               },
               onOrderPaid: async () => {},
               onCustomerCreated: async (payload) => {
-                const user = await prisma.user.findUnique({
-                  where:{
-                    email: payload.data.email!
-                  }
-                });
-
-                if(user){
-                  await updatePolarCustomerId(user.id, payload.data.id)
-                }
+                await syncPolarCustomerForEmail(
+                  payload.data.id,
+                  payload.data.email
+                );
+              },
+              onCustomerUpdated: async (payload) => {
+                await syncPolarCustomerForEmail(
+                  payload.data.id,
+                  payload.data.email
+                );
               }
             })
         ],
