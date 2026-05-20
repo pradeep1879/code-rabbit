@@ -107,4 +107,26 @@ export const indexCodebase = async (
 };
 
 
+export const retrieveContext = async (query:string, repoId:string, topK:number = 5) => {
+  const embedding  = await generateEmbedding(query);
+
+  const results = await pineconeIndex.query({
+    vector: embedding,
+    filter: {repoId},
+    topK,
+    includeMetadata: true,
+  });
+
+  return results.matches
+    .map(
+      (match) =>
+        match.metadata?.content
+    )
+    .filter(
+      (content): content is string =>
+        typeof content === "string"
+    );
+}
+
+
 
