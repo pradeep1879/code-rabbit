@@ -3,12 +3,11 @@
 import { inngest } from "@/inngest/client";
 import prisma from "@/lib/db"
 import { getPullRequestDiff } from "@/module/github/lib/github";
+import { canCreateReview, incrementReviewCount } from "@/module/payment/lib/subscription";
 
 export const reviewPullRequest = async(owner: string, repo:string, prNumber:number) =>{
 
   try {
-    
-    
     const repository = await prisma.repository.findFirst({
       where:{
         owner,
@@ -30,8 +29,14 @@ export const reviewPullRequest = async(owner: string, repo:string, prNumber:numb
     if(!repository){
       throw new Error(`Repository ${owner}/${repo} not foundin database. Please reconnect the repository`)
     }
+
+    const canReviw = await canCreateReview(repository.user.id, repository.id);
+    if(!canReviw){
+      throw new Error("Review limit reached for this repository.Please upgrade to Pro for umlimited reviews.")
+    }
     
     const githubAccount = repository.user.accounts[0];
+
     if(!githubAccount.accessToken){
       throw new Error(`No Github accessToken found for this repository`)
     }
@@ -49,8 +54,11 @@ export const reviewPullRequest = async(owner: string, repo:string, prNumber:numb
         userId: repository.user.id
       }
     });
+
+    await incrementReviewCount(repository.user.id, repository.id)
     
     return {success:true,  message: "Review Queued"}
+
   } catch (error) {
     try {
       const repository = await prisma.repository.findFirst({

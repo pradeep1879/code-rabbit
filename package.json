@@ -14,6 +14,8 @@
     "@google/generative-ai": "^0.24.1",
     "@huggingface/inference": "^4.13.15",
     "@pinecone-database/pinecone": "^7.2.0",
+    "@polar-sh/better-auth": "^1.8.4",
+    "@polar-sh/sdk": "^0.47.1",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
