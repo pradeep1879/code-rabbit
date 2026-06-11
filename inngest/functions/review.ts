@@ -188,4 +188,4 @@ export const generateReview = inngest.createFunction(
         success: true,
       };
     }
-  );
+);

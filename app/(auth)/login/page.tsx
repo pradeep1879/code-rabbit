@@ -1,14 +1,18 @@
-import LoginUI from '@/module/components/login-ui'
-import { requireUnAuth } from '@/module/utils/auth-utils'
-import React from 'react'
+import LoginUI from "@/module/components/login-ui";
+import { requireUnAuth } from "@/module/utils/auth-utils";
+import { Suspense } from "react";
 
-const LoginPage = async () => {
+async function LoginGate() {
   await requireUnAuth();
-  return (
-    <div>
-      <LoginUI/>
-    </div>
-  )
+  return <LoginUI />;
 }
 
-export default LoginPage
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={<div className="min-h-screen bg-black text-white" />}
+    >
+      <LoginGate />
+    </Suspense>
+  );
+}

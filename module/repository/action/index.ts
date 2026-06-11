@@ -23,7 +23,7 @@ export const fetchRepositories = async (
 
   const dbRepo = await prisma.repository.findMany({
     where: {
-      userId: session.user.id,
+      userId: session.user.id
     },
   });
 
@@ -86,6 +86,6 @@ export const connectRepository = async(owner:string, repo:string, githubId:numbe
     } catch (error) {
       console.log(error)
     }
-}
+  }
   return webhook
 }
