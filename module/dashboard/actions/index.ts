@@ -12,13 +12,7 @@ import {
 
 export const getContributionStats = async () => {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      throw new Error("Unauthorized");
-    }
+     
 
     const token = await getGithubToken();
 
@@ -52,10 +46,7 @@ export const getContributionStats = async () => {
 
     return contributions;
   } catch (error) {
-    console.error(
-      "Contribution Stats Error:",
-      error
-    );
+   4
 
     return [];
   }

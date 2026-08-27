@@ -31,7 +31,7 @@ export const getUserProfile = async()=>{
   })
 
   return user
-  } catch (error) {
+   } catch (error) {
     console.error("Error while fetching user profile:", error)
     return null
   }
